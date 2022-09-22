@@ -37,7 +37,9 @@ class DoughnutWidget extends StatefulWidget {
   final DataProvider data;
   final Size size;
 
-  const DoughnutWidget({Key? key, required this.data, required this.size}) : super(key: key);
+  final Function(SegmentData segment)? onTapSegment;
+
+  const DoughnutWidget({Key? key, required this.data, required this.size, this.onTapSegment}) : super(key: key);
 
   @override
   State createState() => _DoughnutState();
@@ -99,7 +101,9 @@ class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin
           return Center(
             key: Key('segment/${piece.segment.label}'),
             child: GestureDetector(
-              onTap: () => debugPrint('operation ${piece.segment.label}'),
+              onTap: () => widget.onTapSegment != null
+                  ? widget.onTapSegment!(piece.segment)
+                  : debugPrint('Tap segment ${piece.segment}'),
               child: CustomPaint(
                 size: widget.size,
                 painter: DonutSegmentPainter(
