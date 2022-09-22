@@ -1,4 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+
+///
+/// @see https://gist.github.com/rxlabz/081b6272f35471463a62e2ae8414025e
 
 class SegmentData {
   final String label;
@@ -22,54 +27,98 @@ class DataProvider {
 
 class PieceOfDonut {
   final SegmentData segment;
+  final double startAngle;
   final double sweepAngle;
 
-  PieceOfDonut({required this.segment, required this.sweepAngle});
+  PieceOfDonut({required this.segment, required this.sweepAngle, required this.startAngle});
 }
 
-class DoughnutWidget extends StatelessWidget {
+class DoughnutWidget extends StatefulWidget {
   final DataProvider data;
   final Size size;
 
-  const DoughnutWidget({super.key, required this.data, required this.size});
+  const DoughnutWidget({Key? key, required this.data, required this.size}) : super(key: key);
+
+  @override
+  State createState() => _DoughnutState();
+}
+
+class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin {
+  late final anim = AnimationController(vsync: this, duration: const Duration(seconds: 3));
+  final List<CurvedAnimation> intervals = [];
+
+  DataProvider get data => widget.data;
+
+  @override
+  void initState() {
+    super.initState();
+
+    /// add debug
+    anim.addListener(() => debugPrint("progress: ${anim.value}"));
+
+    final intervalValues = <List<double>>[];
+
+    /// will create every interval of the animation process
+    for (final segment in data.segments) {
+      final end = segment.value / data.total;
+      final previousInterval = intervalValues.isNotEmpty ? intervalValues.last : [0.0, 0.0];
+      final interval = CurvedAnimation(
+        parent: anim,
+        curve: Interval(previousInterval.last, previousInterval.last + end),
+      );
+      intervals.add(interval);
+      intervalValues.add([previousInterval.last, previousInterval.last + end]);
+    }
+
+    anim.forward();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // calcul des angles des ≠ segments
-
-    List<PieceOfDonut> categorySegmentsData = [];
-
+    List<PieceOfDonut> pieces = [];
     for (var segment in data.segments) {
-      categorySegmentsData.add(
+      final previousStartAngle = pieces.isNotEmpty ? pieces.last.startAngle : 0.0;
+      final previousSweepAngle = pieces.isNotEmpty ? pieces.last.sweepAngle : 0.0;
+      final elementSweepAngle = (segment.value / data.total) * pi * 2;
+
+      debugPrint('cat. ${segment.label} $elementSweepAngle $previousStartAngle $previousSweepAngle');
+
+      pieces.add(
         PieceOfDonut(
           segment: segment,
-          sweepAngle: categorySegmentsData.isEmpty ? 0 : categorySegmentsData.last.sweepAngle,
+          sweepAngle: elementSweepAngle,
+          startAngle: previousStartAngle + previousSweepAngle,
         ),
       );
     }
-    return Stack(
-      children: <Widget>[
-        ...categorySegmentsData.map((e) {
+
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (context, _) => Stack(
+        children: pieces.map((piece) {
           return Center(
             child: GestureDetector(
-              onTap: () => debugPrint('operation ${e.segment.label}'),
+              onTap: () => debugPrint('operation ${piece.segment.label}'),
               child: CustomPaint(
-                size: size,
-                painter: DonutSegmentPainter(e, size: size),
+                size: widget.size,
+                painter: DonutSegmentPainter(
+                  piece,
+                  progress: intervals[pieces.indexOf(piece)].value,
+                  size: widget.size,
+                ),
               ),
             ),
           );
         }).toList(),
-      ],
+      ),
     );
   }
 }
 
 class DonutSegmentPainter extends CustomPainter {
   final PieceOfDonut data;
+  final double progress;
   final Size size;
-
-  const DonutSegmentPainter(this.data, {required this.size});
 
   Path get path {
     final center = size.center(Offset.zero);
@@ -78,11 +127,19 @@ class DonutSegmentPainter extends CustomPainter {
     path.lineTo(center.dx, 0);
     path.addArc(
       Rect.fromPoints(Offset.zero, size.bottomRight(Offset.zero)),
-      data.segment.value /*-pi / 2*/,
-      data.sweepAngle /*pi / 2*/,
+      data.startAngle /*-pi / 2*/,
+      data.sweepAngle * progress /*pi / 2*/,
     );
     path.lineTo(center.dx, center.dy);
     return path;
+  }
+
+  DonutSegmentPainter(
+    this.data, {
+    required this.progress,
+    required this.size,
+  }) {
+    debugPrint('DonutSegmentPainter.DonutSegmentPainter... $progress');
   }
 
   @override
@@ -106,7 +163,7 @@ class DonutSegmentPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(DonutSegmentPainter oldDelegate) => true;
+  bool shouldRepaint(DonutSegmentPainter oldDelegate) => true /*oldDelegate.data != data*/;
 
   @override
   bool? hitTest(Offset position) => path.contains(position);

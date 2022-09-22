@@ -104,8 +104,10 @@ class OperationList {
 
   OperationList(this.operations);
 
-  List<Category> get categories => operations.map((e) => e.category).toSet().toList();
+  OperationList get debitOperationList => OperationList(operations.where((e) => e.amount < 0).toList());
+  OperationList get creditOperationList => OperationList(operations.where((e) => e.amount >= 0).toList());
 
+  List<Category> get categories => operations.map((e) => e.category).toSet().toList();
   List<Category> get parentCategories => categories.where((element) => element.parent == null).toSet().toList();
 
   double get amount => (operations.map((e) => e.amount).toList().reduce((a, b) => a + b));

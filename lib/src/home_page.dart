@@ -30,7 +30,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     getOperations().then((value) {
       setState(() {
-        list = value;
+        list = value.debitOperationList;
       });
     });
   }
@@ -59,22 +59,33 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget buildContent(BuildContext context, OperationList list) {
-    var segments = list.parentCategories.map((cat) {
-      var amount =
-          list.operations.where((element) => element.category == cat).map((e) => e.amount).reduce((a, b) => a + b);
+  List<SegmentData> buildSegments(OperationList list) {
+    return list.parentCategories.map((cat) {
+      var amount = list.operations
+          .where((element) {
+            /// fetch all operations that match parent of child of parent;
+            return element.category == cat || element.category.parent == cat;
+          })
+          .map((e) => e.amount)
+          .reduce((a, b) => a + b);
       return SegmentData(
         label: cat.name,
         value: amount,
         color: cat.color,
       );
     }).toList();
+  }
 
+  Widget buildContent(BuildContext context, OperationList list) {
+    var segments = buildSegments(list);
     return Column(
       children: [
-        DoughnutWidget(
-          size: const Size(300, 300),
-          data: DataProvider(segments),
+        Padding(
+          padding: EdgeInsets.all(10.0),
+          child: DoughnutWidget(
+            size: const Size(200, 200),
+            data: DataProvider(segments),
+          ),
         ),
         Container(
           height: 20,
