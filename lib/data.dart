@@ -19,6 +19,7 @@ class Category {
   String name;
   Color color;
   Category? parent;
+  List<Category>? children;
 
   Category({required this.id, required this.name, required this.color, required this.parent});
 }
@@ -43,6 +44,21 @@ Future<void> _load() async {
   for (var element in catJson) {
     var c = element as Map<String, dynamic>;
     _categories.add(Category(id: c['id'], name: c['label'], color: (c['color'] as String).toColor(), parent: null));
+  }
+
+  /// build parent categories
+  for (var element in catJson) {
+    var c = element as Map<String, dynamic>;
+    var cat = _categories.firstWhere((element) => element.id == c['id']);
+    if (c['parentId'] != null) {
+      var id = int.parse(c['parentId']);
+      cat.parent = _categories.firstWhere((element) => element.id == id);
+    }
+  }
+
+  /// build categories children
+  for (var parent in _categories.where((c) => c.parent == null)) {
+    parent.children = _categories.where((element) => element.parent == parent).toSet().toList();
   }
 
   var opId = 1;
@@ -89,6 +105,8 @@ class OperationList {
   OperationList(this.operations);
 
   List<Category> get categories => operations.map((e) => e.category).toSet().toList();
+
+  List<Category> get parentCategories => categories.where((element) => element.parent == null).toSet().toList();
 
   double get amount => (operations.map((e) => e.amount).toList().reduce((a, b) => a + b));
 }
