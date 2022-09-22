@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_pfmbudget/src/categories_page.dart';
+import 'package:flutter_pfmbudget/src/category_page.dart';
 import 'package:flutter_pfmbudget/src/home_page.dart';
 
 void main() {
@@ -25,7 +27,28 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      initialRoute: '/',
+      onGenerateRoute: (RouteSettings routeSettings) {
+        var args = <String, String>{};
+        try {
+          args.addAll(routeSettings.arguments as Map<String, String>);
+        } catch (e) {
+          debugPrint("$e");
+        }
+        return MaterialPageRoute<void>(
+          settings: routeSettings,
+          builder: (BuildContext context) {
+            switch (routeSettings.name) {
+              case CategoryPage.routeName:
+                return CategoryPage(args: args);
+              case CategoriesPage.routeName:
+                return CategoriesPage(args: args);
+              default:
+                return HomePage(args: args);
+            }
+          },
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_pfmbudget/src/widgets/doughnut_widget.dart';
 
 extension ColorExtension on String {
   toColor() {
@@ -111,4 +112,21 @@ class OperationList {
   List<Category> get parentCategories => categories.where((element) => element.parent == null).toSet().toList();
 
   double get amount => (operations.map((e) => e.amount).toList().reduce((a, b) => a + b));
+
+  List<SegmentData> getData() {
+    return parentCategories.map((cat) {
+      var amount = operations
+          .where((element) {
+            /// fetch all operations that match parent of child of parent;
+            return element.category == cat || element.category.parent == cat;
+          })
+          .map((e) => e.amount)
+          .reduce((a, b) => a + b);
+      return SegmentData(
+        label: cat.name,
+        value: amount,
+        color: cat.color,
+      );
+    }).toList();
+  }
 }

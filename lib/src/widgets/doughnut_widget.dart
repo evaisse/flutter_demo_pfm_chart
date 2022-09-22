@@ -97,6 +97,7 @@ class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin
       builder: (context, _) => Stack(
         children: pieces.map((piece) {
           return Center(
+            key: Key('segment/${piece.segment.label}'),
             child: GestureDetector(
               onTap: () => debugPrint('operation ${piece.segment.label}'),
               child: CustomPaint(
