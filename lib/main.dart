@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_pfmbudget/src/categories_page.dart';
-import 'package:flutter_pfmbudget/src/category_page.dart';
 import 'package:flutter_pfmbudget/src/home_page.dart';
 
 void main() {
@@ -39,8 +38,6 @@ class MyApp extends StatelessWidget {
           settings: routeSettings,
           builder: (BuildContext context) {
             switch (routeSettings.name) {
-              case CategoryPage.routeName:
-                return CategoryPage(args: args);
               case CategoriesPage.routeName:
                 return CategoriesPage(args: args);
               default:

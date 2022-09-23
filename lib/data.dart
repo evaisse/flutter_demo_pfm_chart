@@ -92,10 +92,10 @@ Future<List<Category>> getCategories() async {
   return _categories;
 }
 
-Future<OperationList> getOperations({Category? category}) async {
+Future<OperationList> getOperations({int? categoryId}) async {
   await _load();
-  if (category != null) {
-    return OperationList(_operations.where((element) => element.category == category).toList());
+  if (categoryId != null && _categories.where((element) => element.id == categoryId).isNotEmpty) {
+    return OperationList(_operations.where((element) => element.category.id == categoryId).toList());
   }
   return OperationList(_operations);
 }
@@ -122,11 +122,7 @@ class OperationList {
           })
           .map((e) => e.amount)
           .reduce((a, b) => a + b);
-      return SegmentData(
-        label: cat.name,
-        value: amount,
-        color: cat.color,
-      );
+      return SegmentData(label: cat.name, value: amount, color: cat.color, ref: cat);
     }).toList();
   }
 }

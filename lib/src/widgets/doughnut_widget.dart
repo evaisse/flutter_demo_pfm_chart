@@ -9,11 +9,13 @@ class SegmentData {
   final String label;
   final double value;
   final Color color;
+  final dynamic ref;
 
   SegmentData({
     required this.label,
     required this.value,
     required this.color,
+    this.ref,
   });
 }
 
@@ -34,12 +36,17 @@ class PieceOfDonut {
 }
 
 class DoughnutWidget extends StatefulWidget {
-  final DataProvider data;
+  final DataProvider? data;
   final Size size;
+  late final Color _backgroundColor;
 
   final Function(SegmentData segment)? onTapSegment;
 
-  const DoughnutWidget({Key? key, required this.data, required this.size, this.onTapSegment}) : super(key: key);
+  DoughnutWidget(
+      {Key? key, required this.data, required this.size, this.onTapSegment, Color backgroundColor = Colors.grey})
+      : super(key: key) {
+    _backgroundColor = backgroundColor;
+  }
 
   @override
   State createState() => _DoughnutState();
@@ -49,18 +56,29 @@ class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin
   late final anim = AnimationController(vsync: this, duration: const Duration(seconds: 3));
   final List<CurvedAnimation> intervals = [];
 
-  DataProvider get data => widget.data;
+  DataProvider get data => widget.data ?? DataProvider([]);
+
+  @override
+  void dispose() {
+    anim.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
 
     /// add debug
-    anim.addListener(() => debugPrint("progress: ${anim.value}"));
+    // anim.addListener(() => debugPrint("progress: ${anim.value}"));
 
-    final intervalValues = <List<double>>[];
+    anim.forward();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     /// will create every interval of the animation process
+    final intervalValues = <List<double>>[];
+    intervals.clear();
     for (final segment in data.segments) {
       final end = segment.value / data.total;
       final previousInterval = intervalValues.isNotEmpty ? intervalValues.last : [0.0, 0.0];
@@ -72,11 +90,6 @@ class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin
       intervalValues.add([previousInterval.last, previousInterval.last + end]);
     }
 
-    anim.forward();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     List<PieceOfDonut> pieces = [];
     for (var segment in data.segments) {
       final previousStartAngle = pieces.isNotEmpty ? pieces.last.startAngle : 0.0;
@@ -94,28 +107,50 @@ class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin
       );
     }
 
-    return AnimatedBuilder(
-      animation: anim,
-      builder: (context, _) => Stack(
-        children: pieces.map((piece) {
-          return Center(
-            key: Key('segment/${piece.segment.label}'),
-            child: GestureDetector(
-              onTap: () => widget.onTapSegment != null
-                  ? widget.onTapSegment!(piece.segment)
-                  : debugPrint('Tap segment ${piece.segment}'),
-              child: CustomPaint(
-                size: widget.size,
-                painter: DonutSegmentPainter(
-                  piece,
-                  progress: intervals[pieces.indexOf(piece)].value,
-                  size: widget.size,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+    final bgPlaceholderPie = Center(
+      child: CustomPaint(
+        size: widget.size,
+        painter: DonutSegmentPainter(
+          PieceOfDonut(
+            segment: SegmentData(label: "", color: Colors.grey, value: 1),
+            startAngle: 0,
+            sweepAngle: 360,
+          ),
+          progress: 1,
+          size: widget.size,
+        ),
       ),
+    );
+
+    // @todo add first full circle to stack
+    return Stack(
+      children: [
+        bgPlaceholderPie,
+        if (data.segments.isNotEmpty)
+          AnimatedBuilder(
+            animation: anim,
+            builder: (context, _) => Stack(
+              children: pieces.map((piece) {
+                return Center(
+                  key: Key('segment/${piece.segment.label}'),
+                  child: GestureDetector(
+                    onTap: () => widget.onTapSegment != null
+                        ? widget.onTapSegment!(piece.segment)
+                        : debugPrint('Tap segment ${piece.segment}'),
+                    child: CustomPaint(
+                      size: widget.size,
+                      painter: DonutSegmentPainter(
+                        piece,
+                        progress: intervals[pieces.indexOf(piece)].value,
+                        size: widget.size,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          )
+      ],
     );
   }
 }
@@ -144,7 +179,7 @@ class DonutSegmentPainter extends CustomPainter {
     required this.progress,
     required this.size,
   }) {
-    debugPrint('DonutSegmentPainter.DonutSegmentPainter... $progress');
+    // debugPrint('DonutSegmentPainter.DonutSegmentPainter... $progress');
   }
 
   @override
