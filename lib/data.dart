@@ -20,7 +20,7 @@ class Category {
   String name;
   Color color;
   Category? parent;
-  List<Category>? children;
+  List<Category> children = [];
 
   Category({required this.id, required this.name, required this.color, required this.parent});
 }
@@ -95,7 +95,10 @@ Future<List<Category>> getCategories() async {
 Future<OperationList> getOperations({int? categoryId}) async {
   await _load();
   if (categoryId != null && _categories.where((element) => element.id == categoryId).isNotEmpty) {
-    return OperationList(_operations.where((element) => element.category.id == categoryId).toList());
+    final category = _categories.firstWhere((element) => element.id == categoryId);
+    return OperationList(_operations
+        .where((element) => element.category == category || category.children.contains(element.category))
+        .toList());
   }
   return OperationList(_operations);
 }

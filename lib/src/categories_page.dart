@@ -27,9 +27,15 @@ class _CategoriesPageState extends State<CategoriesPage> {
     if (widget.args['categoryId'] != null) {
       catId = int.parse(widget.args['categoryId']);
     }
-    getOperations(categoryId: catId).then((value) {
-      setState(() {
-        list = value.debitOperationList;
+    getCategories().then((categories) {
+      getOperations(categoryId: catId).then((value) {
+        setState(() {
+          if (catId != null) {
+            category = categories.firstWhere((element) => element.id == catId!);
+          }
+          list = value.debitOperationList;
+          data = DataProvider(list!.getData());
+        });
       });
     });
   }
@@ -51,8 +57,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
               padding: const EdgeInsets.all(10.0),
               child: DoughnutWidget(
                 size: const Size(200, 200),
-                data: list != null ? DataProvider(list!.getData()) : null,
+                data: data,
                 onTapSegment: (segment) {
+                  /// skip redirection if there is only one category
+                  if ((data?.segments.length ?? 0) > 1) return;
+
+                  /// redirect to detail of the category
                   Navigator.of(context).pushNamed(
                     CategoriesPage.routeName,
                     arguments: {"categoryId": "${(segment.ref as Category).id}"},

@@ -53,7 +53,7 @@ class DoughnutWidget extends StatefulWidget {
 }
 
 class _DoughnutState extends State<DoughnutWidget> with TickerProviderStateMixin {
-  late final anim = AnimationController(vsync: this, duration: const Duration(seconds: 3));
+  late final anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
   final List<CurvedAnimation> intervals = [];
 
   DataProvider get data => widget.data ?? DataProvider([]);
