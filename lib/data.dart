@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_pfmbudget/src/widgets/doughnut_widget.dart';
 
 extension ColorExtension on String {
   toColor() {
@@ -91,10 +92,10 @@ Future<List<Category>> getCategories() async {
   return _categories;
 }
 
-Future<OperationList> getOperations({Category? category}) async {
+Future<OperationList> getOperations({int? categoryId}) async {
   await _load();
-  if (category != null) {
-    return OperationList(_operations.where((element) => element.category == category).toList());
+  if (categoryId != null && _categories.where((element) => element.id == categoryId).isNotEmpty) {
+    return OperationList(_operations.where((element) => element.category.id == categoryId).toList());
   }
   return OperationList(_operations);
 }
@@ -104,9 +105,24 @@ class OperationList {
 
   OperationList(this.operations);
 
-  List<Category> get categories => operations.map((e) => e.category).toSet().toList();
+  OperationList get debitOperationList => OperationList(operations.where((e) => e.amount < 0).toList());
+  OperationList get creditOperationList => OperationList(operations.where((e) => e.amount >= 0).toList());
 
+  List<Category> get categories => operations.map((e) => e.category).toSet().toList();
   List<Category> get parentCategories => categories.where((element) => element.parent == null).toSet().toList();
 
   double get amount => (operations.map((e) => e.amount).toList().reduce((a, b) => a + b));
+
+  List<SegmentData> getData() {
+    return parentCategories.map((cat) {
+      var amount = operations
+          .where((element) {
+            /// fetch all operations that match parent of child of parent;
+            return element.category == cat || element.category.parent == cat;
+          })
+          .map((e) => e.amount)
+          .reduce((a, b) => a + b);
+      return SegmentData(label: cat.name, value: amount, color: cat.color, ref: cat);
+    }).toList();
+  }
 }
